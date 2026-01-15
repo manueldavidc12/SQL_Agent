@@ -77,6 +77,32 @@ export interface AgentResponse {
   steps: string[];
 }
 
+// Extract SQL from LLM response - handles various formatting styles
+function extractSQL(response: string): string {
+  // Pattern 1: ```sql or ```SQL with flexible whitespace
+  const sqlBlockMatch = response.match(/```sql\s*([\s\S]*?)```/i);
+  if (sqlBlockMatch) return sqlBlockMatch[1].trim();
+
+  // Pattern 2: Generic code block ``` ... ```
+  const codeBlockMatch = response.match(/```\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    const content = codeBlockMatch[1].trim();
+    // Check if it looks like SQL (starts with SELECT, WITH, etc.)
+    if (/^(SELECT|WITH)\b/i.test(content)) {
+      return content;
+    }
+  }
+
+  // Pattern 3: Look for SELECT/WITH statement without code block
+  const selectMatch = response.match(/\b(SELECT\s+[\s\S]*?)(?=\n\n|\*\*|$)/i);
+  if (selectMatch) return selectMatch[1].trim();
+
+  const withMatch = response.match(/\b(WITH\s+[\s\S]*?SELECT[\s\S]*?)(?=\n\n|\*\*|$)/i);
+  if (withMatch) return withMatch[1].trim();
+
+  return '';
+}
+
 // Create query agent with bash-tool
 export async function createQueryAgent(
   schemaFiles: Record<string, string>,
@@ -123,9 +149,8 @@ export async function createQueryAgent(
 
       const finalResponse = result.text;
 
-      // Parse the response to extract SQL and explanation
-      const sqlMatch = finalResponse.match(/```sql\n([\s\S]*?)```/);
-      const sql = sqlMatch ? sqlMatch[1].trim() : '';
+      // Parse the response to extract SQL - try multiple patterns
+      const sql = extractSQL(finalResponse);
 
       const explanationMatch = finalResponse.match(/\*\*Explanation:\*\*\s*([\s\S]*?)(?=\*\*SQL Query:|$)/);
       const explanation = explanationMatch

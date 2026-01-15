@@ -31,6 +31,16 @@ export async function POST(request: NextRequest) {
     // Run the agent to generate SQL
     const result = await agent.query(question);
 
+    // Check if SQL was extracted
+    if (!result.sql || result.sql.trim() === '') {
+      return NextResponse.json({
+        success: false,
+        error: 'Could not extract SQL from the response. Please try rephrasing your question.',
+        explanation: result.explanation,
+        steps: result.steps,
+      });
+    }
+
     // Validate the generated SQL
     const validation = validateSqlQuery(result.sql);
     if (!validation.valid) {
