@@ -197,9 +197,10 @@ export function validateSqlQuery(sql: string): { valid: boolean; error?: string 
   }
 
   // Block multiple statements (SQL injection prevention)
-  // Count semicolons not inside strings
+  // Allow trailing semicolon, but block semicolons followed by more content
   const withoutStrings = trimmed.replace(/'[^']*'/g, '').replace(/"[^"]*"/g, '');
-  if (withoutStrings.includes(';')) {
+  const withoutTrailingSemicolon = withoutStrings.replace(/;+\s*$/, '');
+  if (withoutTrailingSemicolon.includes(';')) {
     return {
       valid: false,
       error: 'Multiple SQL statements are not allowed.',
