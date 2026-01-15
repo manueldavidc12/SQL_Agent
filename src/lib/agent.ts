@@ -166,23 +166,15 @@ export async function createQueryAgent(
   };
 }
 
-// Validate that SQL is a SELECT query only (read-only protection)
+// Validate SQL is read-only (no data/schema modifications)
 export function validateSqlQuery(sql: string): { valid: boolean; error?: string } {
   const trimmed = sql.trim().toUpperCase();
 
-  // Must start with SELECT or WITH (for CTEs)
-  if (!trimmed.startsWith('SELECT') && !trimmed.startsWith('WITH')) {
-    return {
-      valid: false,
-      error: 'Only SELECT queries are allowed. Query must start with SELECT or WITH.',
-    };
-  }
-
-  // Check for dangerous keywords using word boundaries
+  // Block dangerous keywords that modify data/schema
   const dangerousKeywords = [
     'INSERT', 'UPDATE', 'DELETE', 'DROP', 'TRUNCATE', 'ALTER',
     'CREATE', 'GRANT', 'REVOKE', 'EXECUTE', 'EXEC', 'CALL',
-    'SET', 'COPY', 'LOAD', 'VACUUM', 'REINDEX', 'CLUSTER'
+    'COPY', 'LOAD', 'VACUUM', 'REINDEX', 'CLUSTER'
   ];
 
   for (const keyword of dangerousKeywords) {
