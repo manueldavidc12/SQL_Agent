@@ -334,18 +334,16 @@ export function QueryInterface({ credentials, schema, onDisconnect }: QueryInter
 
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto">
-          {!activeConversation || activeConversation.messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center px-4">
-              <div className="max-w-lg text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-neutral-100 mb-4">
-                  <Database className="h-6 w-6 text-neutral-500" />
-                </div>
-                <h1 className="text-2xl font-semibold text-neutral-800 mb-2">
-                  Query your database
-                </h1>
-                <p className="text-neutral-500 mb-8">
-                  Ask questions in plain English and get SQL queries with results
-                </p>
+          <div className="max-w-4xl mx-auto w-full">
+            {/* Welcome Header - Always visible */}
+            <div className="py-12 px-6 text-center border-b border-neutral-100">
+              <h1 className="text-xl font-semibold text-neutral-800 mb-1">
+                Query your database
+              </h1>
+              <p className="text-neutral-500 text-sm mb-6">
+                Ask questions in plain English and get SQL queries with results
+              </p>
+              {(!activeConversation || activeConversation.messages.length === 0) && (
                 <div className="flex flex-wrap justify-center gap-2">
                   {[
                     "Show me all tables",
@@ -355,16 +353,18 @@ export function QueryInterface({ credentials, schema, onDisconnect }: QueryInter
                     <button
                       key={i}
                       onClick={() => setInput(q)}
-                      className="px-4 py-2 text-sm text-neutral-600 bg-neutral-50 border border-neutral-200 rounded-lg hover:bg-neutral-100 hover:border-neutral-300 transition-colors"
+                      className="px-3 py-1.5 text-sm text-neutral-600 bg-neutral-50 border border-neutral-200 rounded-lg hover:bg-neutral-100 hover:border-neutral-300 transition-colors"
                     >
                       {q}
                     </button>
                   ))}
                 </div>
-              </div>
+              )}
             </div>
-          ) : (
-            <div className="max-w-4xl mx-auto w-full">
+
+            {/* Messages */}
+            {activeConversation && activeConversation.messages.length > 0 && (
+              <div>
               {activeConversation.messages.map((message) => (
                 <div
                   key={message.id}
@@ -526,24 +526,25 @@ export function QueryInterface({ credentials, schema, onDisconnect }: QueryInter
                 </div>
               ))}
 
-              {/* Loading */}
-              {loading && (
-                <div className="px-6 py-6 bg-neutral-50/50">
-                  <div className="flex gap-4">
-                    <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 text-xs font-medium">
-                      Q
-                    </div>
-                    <div className="flex items-center gap-2 text-neutral-500 text-sm">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Thinking...</span>
+                {/* Loading */}
+                {loading && (
+                  <div className="px-6 py-6 bg-neutral-50/50">
+                    <div className="flex gap-4">
+                      <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 text-xs font-medium">
+                        Q
+                      </div>
+                      <div className="flex items-center gap-2 text-neutral-500 text-sm">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Thinking...</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div ref={messagesEndRef} />
-            </div>
-          )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Input Area */}
