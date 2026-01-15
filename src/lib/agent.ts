@@ -141,18 +141,29 @@ export async function createQueryAgent(
   };
 }
 
-// Validate that SQL is a SELECT query only
+// Validate that SQL is a SELECT query only (read-only protection)
 export function validateSqlQuery(sql: string): { valid: boolean; error?: string } {
   const trimmed = sql.trim().toUpperCase();
 
-  // Check for dangerous keywords
+  // Must start with SELECT or WITH (for CTEs)
+  if (!trimmed.startsWith('SELECT') && !trimmed.startsWith('WITH')) {
+    return {
+      valid: false,
+      error: 'Only SELECT queries are allowed. Query must start with SELECT or WITH.',
+    };
+  }
+
+  // Check for dangerous keywords using word boundaries
   const dangerousKeywords = [
     'INSERT', 'UPDATE', 'DELETE', 'DROP', 'TRUNCATE', 'ALTER',
-    'CREATE', 'GRANT', 'REVOKE', 'EXECUTE', 'EXEC'
+    'CREATE', 'GRANT', 'REVOKE', 'EXECUTE', 'EXEC', 'CALL',
+    'SET', 'COPY', 'LOAD', 'VACUUM', 'REINDEX', 'CLUSTER'
   ];
 
   for (const keyword of dangerousKeywords) {
-    if (trimmed.startsWith(keyword) || trimmed.includes(` ${keyword} `)) {
+    // Use word boundary regex to catch all variations
+    const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+    if (regex.test(trimmed)) {
       return {
         valid: false,
         error: `Query contains forbidden keyword: ${keyword}. Only SELECT queries are allowed.`,
@@ -160,11 +171,21 @@ export function validateSqlQuery(sql: string): { valid: boolean; error?: string 
     }
   }
 
-  // Must start with SELECT or WITH (for CTEs)
-  if (!trimmed.startsWith('SELECT') && !trimmed.startsWith('WITH')) {
+  // Block multiple statements (SQL injection prevention)
+  // Count semicolons not inside strings
+  const withoutStrings = trimmed.replace(/'[^']*'/g, '').replace(/"[^"]*"/g, '');
+  if (withoutStrings.includes(';')) {
     return {
       valid: false,
-      error: 'Query must start with SELECT or WITH',
+      error: 'Multiple SQL statements are not allowed.',
+    };
+  }
+
+  // Block comment-based injection attempts
+  if (trimmed.includes('--') || trimmed.includes('/*')) {
+    return {
+      valid: false,
+      error: 'SQL comments are not allowed.',
     };
   }
 
